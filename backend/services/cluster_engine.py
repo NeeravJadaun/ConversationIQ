@@ -37,14 +37,19 @@ def run_clustering(op_id: str | None, db: Session) -> list[FailureCluster]:
             )
     db.flush()
 
-    db.query(FailureCluster).delete()
+    cluster_delete_query = db.query(FailureCluster)
+    if op_id:
+        cluster_delete_query = cluster_delete_query.filter(FailureCluster.op_id == op_id)
+    cluster_delete_query.delete()
     matrix = np.array([row.embedding for row in conversations], dtype=float)
     if len(conversations) < 10:
         labels = KMeans(n_clusters=min(2, len(conversations)), random_state=7, n_init="auto").fit_predict(matrix)
     else:
         labels = HDBSCAN(min_cluster_size=5, min_samples=3).fit_predict(matrix)
-        if set(labels) <= {-1}:
-            labels = KMeans(n_clusters=min(5, max(2, len(conversations) // 10)), random_state=7, n_init="auto").fit_predict(matrix)
+        usable_clusters = {int(label) for label in labels if label >= 0}
+        minimum_clusters = 2 if op_id else 5
+        if len(usable_clusters) < minimum_clusters:
+            labels = KMeans(n_clusters=min(minimum_clusters, len(conversations)), random_state=7, n_init="auto").fit_predict(matrix)
 
     grouped: dict[tuple[str, int], list[Conversation]] = defaultdict(list)
     for conversation, label in zip(conversations, labels, strict=True):

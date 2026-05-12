@@ -1,3 +1,5 @@
+import time
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -22,7 +24,17 @@ def create_app() -> FastAPI:
 
     @app.on_event("startup")
     def startup() -> None:
-        create_all_tables()
+        last_error: Exception | None = None
+        for _ in range(10):
+            try:
+                create_all_tables()
+                last_error = None
+                break
+            except Exception as exc:
+                last_error = exc
+                time.sleep(2)
+        if last_error is not None:
+            raise last_error
         db = SessionLocal()
         try:
             ensure_operating_procedures(db)
