@@ -6,7 +6,7 @@ import numpy as np
 from sklearn.cluster import HDBSCAN, KMeans
 from sqlalchemy.orm import Session
 
-from models import Conversation, FailureCluster
+from models import Conversation, FailureCluster, Recommendation
 from services.embedder import embed_conversation
 
 
@@ -37,10 +37,16 @@ def run_clustering(op_id: str | None, db: Session) -> list[FailureCluster]:
             )
     db.flush()
 
-    cluster_delete_query = db.query(FailureCluster)
+    old_cluster_query = db.query(FailureCluster)
     if op_id:
-        cluster_delete_query = cluster_delete_query.filter(FailureCluster.op_id == op_id)
-    cluster_delete_query.delete()
+        old_cluster_query = old_cluster_query.filter(FailureCluster.op_id == op_id)
+    old_cluster_ids = [cluster_id for (cluster_id,) in old_cluster_query.with_entities(FailureCluster.id).all()]
+    if old_cluster_ids:
+        db.query(Recommendation).filter(Recommendation.cluster_id.in_(old_cluster_ids)).update(
+            {Recommendation.cluster_id: None},
+            synchronize_session=False,
+        )
+        db.query(FailureCluster).filter(FailureCluster.id.in_(old_cluster_ids)).delete(synchronize_session=False)
     matrix = np.array([row.embedding for row in conversations], dtype=float)
     if len(conversations) < 10:
         labels = KMeans(n_clusters=min(2, len(conversations)), random_state=7, n_init="auto").fit_predict(matrix)

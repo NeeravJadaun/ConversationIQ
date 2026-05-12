@@ -10,13 +10,13 @@ import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { generateRecommendation, getProcedure, getTrend } from "@/lib/api";
 import { scoreTone } from "@/lib/utils";
-import type { ProcedureDetail } from "@/types";
+import type { ProcedureDetail, ResolutionStatus, TrendPoint } from "@/types";
 
 export default function ProcedureDetailPage({ params }: { params: { id: string } }) {
   const [detail, setDetail] = useState<ProcedureDetail | null>(null);
-  const [trend, setTrend] = useState<any[]>([]);
+  const [trend, setTrend] = useState<TrendPoint[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState<ResolutionStatus | "all">("all");
 
   useEffect(() => {
     getProcedure(params.id).then(setDetail);
@@ -64,7 +64,7 @@ export default function ProcedureDetailPage({ params }: { params: { id: string }
         <section>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-xl font-semibold">Recent Conversations</h2>
-            <select className="rounded border border-white/10 bg-surface px-2 py-1 text-sm" value={filter} onChange={(event) => setFilter(event.target.value)}>
+            <select className="rounded border border-white/10 bg-surface px-2 py-1 text-sm" value={filter} onChange={(event) => setFilter(event.target.value as ResolutionStatus | "all")}>
               {["all", "resolved", "failed", "escalated", "looped"].map((item) => <option key={item}>{item}</option>)}
             </select>
           </div>

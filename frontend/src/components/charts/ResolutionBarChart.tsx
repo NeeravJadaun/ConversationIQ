@@ -1,8 +1,9 @@
 "use client";
 
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import type { TrendPoint } from "@/types";
 
-export function ResolutionBarChart({ data }: { data: any[] }) {
+export function ResolutionBarChart({ data }: { data: TrendPoint[] }) {
   return (
     <div className="h-64">
       <ResponsiveContainer width="100%" height="100%">

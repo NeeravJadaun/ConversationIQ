@@ -7,6 +7,14 @@ def test_ingest_single_conversation(client):
     assert response.json()["op_id"] == "OP-01"
 
 
+def test_ingest_generates_missing_conversation_id(client):
+    payload = generate_conversation("OP-01")
+    payload.pop("conversation_id")
+    response = client.post("/api/conversations/ingest", json=payload)
+    assert response.status_code == 201
+    assert response.json()["id"]
+
+
 def test_get_all_procedures(client):
     response = client.get("/api/procedures")
     assert response.status_code == 200

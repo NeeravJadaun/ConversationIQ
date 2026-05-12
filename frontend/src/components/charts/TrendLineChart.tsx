@@ -1,8 +1,9 @@
 "use client";
 
 import { Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import type { TrendPoint } from "@/types";
 
-export function TrendLineChart({ data }: { data: { date: string; health_score: number }[] }) {
+export function TrendLineChart({ data }: { data: TrendPoint[] }) {
   return (
     <div className="h-72">
       <ResponsiveContainer width="100%" height="100%">

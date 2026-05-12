@@ -15,9 +15,20 @@ export default function DashboardPage() {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
 
   useEffect(() => {
-    getProcedures().then(setProcedures).catch(() => setProcedures([]));
-    getClusters().then(setClusters).catch(() => setClusters([]));
-    getRecommendations().then(setRecommendations).catch(() => setRecommendations([]));
+    async function loadDashboard() {
+      const [procedureData, clusterData, recommendationData] = await Promise.all([
+        getProcedures().catch(() => []),
+        getClusters().catch(() => []),
+        getRecommendations().catch(() => []),
+      ]);
+      setProcedures(procedureData);
+      setClusters(clusterData);
+      setRecommendations(recommendationData);
+    }
+
+    loadDashboard();
+    const interval = window.setInterval(loadDashboard, 15000);
+    return () => window.clearInterval(interval);
   }, []);
 
   return (

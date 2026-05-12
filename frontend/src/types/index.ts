@@ -54,3 +54,27 @@ export type ProcedureDetail = OperatingProcedure & {
   recommendations: Recommendation[];
   breakdown: Record<string, number>;
 };
+
+export type TrendPoint = {
+  date: string;
+  health_score: number;
+  resolved: number;
+  escalated: number;
+  looped: number;
+  failed: number;
+};
+
+export type LiveMessage =
+  | { type: "summary"; stats: { total_ops: number; conversations_today: number; avg_health_score: number; open_recommendations: number } }
+  | {
+      type: "new_conversation";
+      op_id: string;
+      op_name?: string;
+      health_score?: number;
+      resolution_status: ResolutionStatus;
+      intent_detected?: string;
+      turn_count?: number;
+      timestamp: string;
+    }
+  | { type: "health_update"; op_id: string; timestamp: string }
+  | { type: "new_cluster"; op_id: string; cluster_id: number; timestamp: string };

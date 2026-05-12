@@ -3,10 +3,13 @@
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { useWebSocket } from "@/hooks/useWebSocket";
+import type { LiveMessage } from "@/types";
+
+type NewConversationMessage = Extract<LiveMessage, { type: "new_conversation" }>;
 
 export function LiveFeed() {
   const { connected, messages } = useWebSocket();
-  const rows = messages.filter((message) => message.type === "new_conversation");
+  const rows = messages.filter((message): message is NewConversationMessage => message.type === "new_conversation");
   return (
     <Card>
       <div className="mb-3 flex items-center justify-between">

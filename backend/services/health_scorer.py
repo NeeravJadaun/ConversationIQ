@@ -7,6 +7,10 @@ from models import Conversation, OperatingProcedure, Recommendation, Recommendat
 from services.simulator import OPERATING_PROCEDURES
 
 
+def _enum_value(value) -> str:
+    return getattr(value, "value", value)
+
+
 def ensure_operating_procedures(db: Session) -> None:
     for op_id, data in OPERATING_PROCEDURES.items():
         existing = db.get(OperatingProcedure, op_id)
@@ -36,11 +40,11 @@ def compute_health_score(op_id: str, db: Session) -> float:
         db.commit()
         return 0.0
 
-    resolved = sum(1 for row in conversations if row.resolution_status == "resolved")
-    escalated = sum(1 for row in conversations if row.resolution_status == "escalated")
-    looped = sum(1 for row in conversations if row.resolution_status == "looped")
+    resolved = sum(1 for row in conversations if _enum_value(row.resolution_status) == "resolved")
+    escalated = sum(1 for row in conversations if _enum_value(row.resolution_status) == "escalated")
+    looped = sum(1 for row in conversations if _enum_value(row.resolution_status) == "looped")
     avg_turns = sum(row.turn_count for row in conversations) / total
-    sentiment_score = sum({"positive": 1.0, "neutral": 0.5, "negative": 0.0}[row.customer_sentiment] for row in conversations) / total
+    sentiment_score = sum({"positive": 1.0, "neutral": 0.5, "negative": 0.0}[_enum_value(row.customer_sentiment)] for row in conversations) / total
     resolution_rate = resolved / total
     escalation_rate = escalated / total
     loop_rate = looped / total

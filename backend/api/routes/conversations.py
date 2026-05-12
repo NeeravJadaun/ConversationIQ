@@ -1,5 +1,6 @@
 from collections import Counter
 from datetime import datetime, timezone
+from uuid import uuid4
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
@@ -25,7 +26,8 @@ def _payload_to_dict(payload: ConversationCreate) -> dict:
 def save_conversation(payload: ConversationCreate, db: Session) -> Conversation:
     ensure_operating_procedures(db)
     data = _payload_to_dict(payload)
-    conversation_id = data.get("conversation_id") or data.get("id")
+    conversation_id = data.get("conversation_id") or data.get("id") or str(uuid4())
+    data["conversation_id"] = conversation_id
     classification = classify_conversation(data)
     embedding = embed_conversation(data)
     row = Conversation(

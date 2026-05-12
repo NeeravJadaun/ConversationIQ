@@ -1,4 +1,4 @@
-import type { FailureCluster, OperatingProcedure, ProcedureDetail, Recommendation } from "@/types";
+import type { FailureCluster, OperatingProcedure, ProcedureDetail, Recommendation, TrendPoint } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -14,7 +14,7 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const getProcedures = () => api<OperatingProcedure[]>("/api/procedures");
 export const getProcedure = (id: string) => api<ProcedureDetail>(`/api/procedures/${id}`);
-export const getTrend = (id: string) => api<{ date: string; health_score: number }[]>(`/api/procedures/${id}/trend`);
+export const getTrend = (id: string) => api<TrendPoint[]>(`/api/procedures/${id}/trend`);
 export const getClusters = () => api<FailureCluster[]>("/api/clusters");
 export const recomputeClusters = () => api<FailureCluster[]>("/api/clusters/recompute", { method: "POST" });
 export const getRecommendations = () => api<Recommendation[]>("/api/recommendations");
