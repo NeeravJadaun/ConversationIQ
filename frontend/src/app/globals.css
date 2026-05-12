@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  min-height: 100%;
+  background: #0A0F1E;
+  color: #F9FAFB;
+}
+
+a,
+button {
+  transition: color 180ms ease, border-color 180ms ease, background-color 180ms ease, opacity 180ms ease;
+}
