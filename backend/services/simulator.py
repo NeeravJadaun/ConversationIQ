@@ -11,7 +11,7 @@ OPERATING_PROCEDURES: dict[str, dict] = {
         "description": "Locks or freezes active debit and credit cards.",
         "happy_path_intents": ["lock my card", "freeze my card", "block my card", "card stolen", "disable my card"],
         "gap_intents": ["temporarily freeze", "pause my card", "put my card on hold", "suspend card access", "deactivate card for travel"],
-        "resolution_rate_target": 0.35,
+        "resolution_rate_target": 0.28,
         "avg_sentiment_drop": 0.65,
     },
     "OP-02": {
@@ -59,7 +59,7 @@ OPERATING_PROCEDURES: dict[str, dict] = {
         "description": "Updates phone, email, and mailing address after verification.",
         "happy_path_intents": ["update my address", "change phone number", "new email address", "change mailing address"],
         "gap_intents": ["change phone without old number", "international address format", "mail forwarding temporary address", "business and personal address mismatch"],
-        "resolution_rate_target": 0.38,
+        "resolution_rate_target": 0.32,
         "avg_sentiment_drop": 0.6,
     },
     "OP-08": {
@@ -121,7 +121,7 @@ def generate_conversation(op_id: str | None = None, force_failure: bool = False)
         sentiment = random.choices(["positive", "neutral"], weights=[0.72, 0.28])[0]
     else:
         status_weights = {
-            "OP-01": [0.2, 0.55, 0.25, 0.0],
+            "OP-01": [0.18, 0.62, 0.2, 0.0],
             "OP-05": [0.15, 0.7, 0.15, 0.0],
             "OP-07": [0.12, 0.28, 0.6, 0.0],
         }.get(op_id, [0.18, 0.38, 0.22, 0.22])
@@ -146,6 +146,11 @@ def generate_conversation(op_id: str | None = None, force_failure: bool = False)
     }
 
 
-def generate_batch(n: int = 500) -> list[dict]:
+def generate_batch(n: int = 500, seed: int = 42) -> list[dict]:
+    state = random.getstate()
+    random.seed(seed)
     op_ids = list(OPERATING_PROCEDURES)
-    return [generate_conversation(op_ids[i % len(op_ids)]) for i in range(n)]
+    try:
+        return [generate_conversation(op_ids[i % len(op_ids)]) for i in range(n)]
+    finally:
+        random.setstate(state)

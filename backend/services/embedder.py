@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import random
 
+from core.config import get_settings
 from core.redis_client import get_cached_json, set_cached_json
 
 _model = None
@@ -21,6 +22,8 @@ def _deterministic_embedding(text: str) -> list[float]:
 
 def _get_model():
     global _model, _model_unavailable
+    if get_settings().embedding_mode.lower() == "mock":
+        return None
     if _model_unavailable:
         return None
     if _model is None:

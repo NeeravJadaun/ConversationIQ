@@ -30,8 +30,9 @@ def generate_recommendation(op_id: str, cluster_id: int | None, db: Session) -> 
     cluster = db.get(FailureCluster, cluster_id) if cluster_id else None
     text = _mock_text(op, cluster)
     settings = get_settings()
-    if settings.openai_api_key:
-        client = OpenAI(api_key=settings.openai_api_key)
+    api_key = settings.normalized_openai_api_key
+    if api_key is not None:
+        client = OpenAI(api_key=api_key)
         examples = []
         if cluster:
             examples = [

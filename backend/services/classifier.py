@@ -28,10 +28,11 @@ def mock_classify_conversation(conversation: dict) -> dict:
 
 def classify_conversation(conversation: dict) -> dict:
     settings = get_settings()
-    if not settings.openai_api_key:
+    api_key = settings.normalized_openai_api_key
+    if api_key is None:
         return mock_classify_conversation(conversation)
 
-    client = OpenAI(api_key=settings.openai_api_key)
+    client = OpenAI(api_key=api_key)
     prompt = {
         "conversation": conversation,
         "schema": {

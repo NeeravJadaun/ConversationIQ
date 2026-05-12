@@ -1,19 +1,30 @@
 from __future__ import annotations
 
 import base64
-import hashlib
-import json
 import os
 import pathlib
 import socket
 import struct
 import sys
 import time
+import urllib.parse
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "backend"))
 
-from http_utils import request  # noqa: E402
+from http_utils import API_URL, request  # noqa: E402
 from services.simulator import generate_batch, generate_conversation  # noqa: E402
+
+
+def _wait_for_api(timeout_seconds: int = 30) -> None:
+    deadline = time.time() + timeout_seconds
+    while time.time() < deadline:
+        try:
+            health = request("GET", "/health", timeout=3)
+            if health and health.get("status") == "ok":
+                return
+        except Exception:
+            time.sleep(1)
+    raise RuntimeError(f"API did not become ready at {API_URL} within {timeout_seconds}s")
 
 
 def _read_ws_frame(sock: socket.socket) -> str:
@@ -30,11 +41,15 @@ def _read_ws_frame(sock: socket.socket) -> str:
 
 
 def _ws_connect() -> socket.socket:
-    sock = socket.create_connection(("localhost", 8000), timeout=5)
+    parsed = urllib.parse.urlparse(API_URL)
+    host = parsed.hostname or "localhost"
+    port = parsed.port or (443 if parsed.scheme == "https" else 80)
+    path_prefix = parsed.path.rstrip("/")
+    sock = socket.create_connection((host, port), timeout=5)
     key = base64.b64encode(os.urandom(16)).decode("ascii")
     request_text = (
-        "GET /ws/live HTTP/1.1\r\n"
-        "Host: localhost:8000\r\n"
+        f"GET {path_prefix}/ws/live HTTP/1.1\r\n"
+        f"Host: {host}:{port}\r\n"
         "Upgrade: websocket\r\n"
         "Connection: Upgrade\r\n"
         f"Sec-WebSocket-Key: {key}\r\n"
@@ -58,6 +73,7 @@ def _status(score: float) -> str:
 
 def main() -> None:
     print("=== ConversationIQ E2E Test ===")
+    _wait_for_api()
 
     conversations = generate_batch(500)
     print("✅ Step 1 passed: Generated 500 conversations")
@@ -92,7 +108,10 @@ def main() -> None:
     sock = _ws_connect()
     _read_ws_frame(sock)
     request("POST", "/api/conversations/ingest", generate_conversation("OP-01", force_failure=True))
-    pushed = _read_ws_frame(sock)
+    pushed = ""
+    deadline = time.time() + 5
+    while time.time() < deadline and "new_conversation" not in pushed:
+        pushed = _read_ws_frame(sock)
     sock.close()
     assert "new_conversation" in pushed
     print("✅ Step 9 passed: WebSocket push received")

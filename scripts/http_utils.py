@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import json
+import os
 import urllib.error
 import urllib.request
 
 
-API_URL = "http://localhost:8000"
+API_URL = os.getenv("API_URL", "http://localhost:8000").rstrip("/")
 
 
 def request(method: str, path: str, payload=None, timeout: int = 120):

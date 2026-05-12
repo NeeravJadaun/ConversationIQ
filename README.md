@@ -39,6 +39,47 @@ python scripts/generate_recommendations.py
 open http://localhost:3000
 ```
 
+The scripts default to `http://localhost:8000`. To point them at another backend:
+
+```bash
+API_URL=http://localhost:8000 python scripts/e2e_test.py
+```
+
+## Railway Deployment
+
+Deploy this repository to Railway as an isolated monorepo with separate services for `backend` and `frontend`, plus Railway-managed PostgreSQL and Redis services.
+
+1. Create PostgreSQL and Redis services in the same Railway project.
+2. Create a backend service from this repo with root directory `/backend` and config file `/backend/railway.json`.
+3. Create a frontend service from this repo with root directory `/frontend` and config file `/frontend/railway.json`.
+4. Generate public domains for the backend and frontend services before setting cross-service URLs.
+
+Railway injects `PORT`; both Dockerfiles are configured to listen on it in production. The backend healthcheck is `/health`; the frontend healthcheck is `/`.
+
+### Required Production Variables
+
+Backend service:
+
+```bash
+APP_ENV=production
+OPENAI_API_KEY=<add manually in Railway>
+DATABASE_URL=${{Postgres.DATABASE_URL}}
+REDIS_URL=${{Redis.REDIS_URL}}
+CORS_ORIGINS=https://${{frontend.RAILWAY_PUBLIC_DOMAIN}}
+EMBEDDING_MODE=mock
+```
+
+Frontend service:
+
+```bash
+NEXT_PUBLIC_API_URL=https://${{backend.RAILWAY_PUBLIC_DOMAIN}}
+NEXT_PUBLIC_WS_URL=wss://${{backend.RAILWAY_PUBLIC_DOMAIN}}
+```
+
+Use the actual Railway service names in reference variables if yours differ from `Postgres`, `Redis`, `backend`, or `frontend`. `OPENAI_API_KEY`, `DATABASE_URL`, and `REDIS_URL` are production secrets or secret-bearing references and should stay in Railway variables only. Do not commit real API keys or database URLs.
+
+`NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_WS_URL` are public frontend build-time variables. Set them before the first frontend deploy, and redeploy the frontend after changing either value.
+
 ## Run Tests
 
 ```bash
@@ -50,11 +91,20 @@ cd frontend && npm test
 
 # End-to-end
 python scripts/e2e_test.py
+
+# Docker smoke test
+bash scripts/docker_smoke_test.sh
 ```
 
 ## Without OpenAI API Key
 
-The classifier and recommender fall back to rule-based mocks automatically. All features work. Recommendations will say `Mock recommendation - add OPENAI_API_KEY for AI-generated suggestions.`
+In development, the classifier and recommender fall back to rule-based mocks automatically when `OPENAI_API_KEY` is empty. All features work. Recommendations will say `Mock recommendation - add OPENAI_API_KEY for AI-generated suggestions.`
+
+In production (`APP_ENV=production` or a Railway environment named `production`), the backend requires `OPENAI_API_KEY` on startup so production uses OpenAI instead of the local mock fallback.
+
+## Embeddings
+
+Docker defaults to `EMBEDDING_MODE=mock` for fast, deterministic local demos. Set `EMBEDDING_MODE=transformer` to use `sentence-transformers/all-MiniLM-L6-v2`.
 
 ## OP Health Score Formula
 

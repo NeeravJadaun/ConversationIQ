@@ -24,6 +24,8 @@ def create_app() -> FastAPI:
 
     @app.on_event("startup")
     def startup() -> None:
+        if settings.is_production and settings.normalized_openai_api_key is None:
+            raise RuntimeError("OPENAI_API_KEY is required in production.")
         last_error: Exception | None = None
         for _ in range(10):
             try:
