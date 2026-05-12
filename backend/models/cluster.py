@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from enum import Enum
+from typing import Optional
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy import Enum as SAEnum
@@ -43,7 +44,7 @@ class Recommendation(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     op_id: Mapped[str] = mapped_column(String(10), index=True, nullable=False)
-    cluster_id: Mapped[int | None] = mapped_column(ForeignKey("failure_clusters.id"), nullable=True)
+    cluster_id: Mapped[Optional[int]] = mapped_column(ForeignKey("failure_clusters.id"), nullable=True)
     recommendation_text: Mapped[str] = mapped_column(Text, nullable=False)
     priority: Mapped[RecommendationPriority] = mapped_column(SAEnum(RecommendationPriority), nullable=False)
     status: Mapped[RecommendationStatus] = mapped_column(

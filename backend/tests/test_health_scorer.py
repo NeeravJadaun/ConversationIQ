@@ -42,7 +42,8 @@ def test_score_components_weighted_correctly(db):
     for i in range(50, 100):
         add_conversation(db, status="failed", sentiment="neutral", turns=4, index=i)
     score = compute_health_score("OP-01", db)
-    assert 20 <= score <= 75
+    expected = 0.5 * 40 + 1.0 * 25 + 1.0 * 20 + (1 - 3.5 / 10) * 10 + 0.75 * 5
+    assert score == round(expected, 2)
 
 
 def test_score_updates_on_new_conversation(db):

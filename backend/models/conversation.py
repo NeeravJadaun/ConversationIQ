@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from enum import Enum
+from typing import Optional
 
 from sqlalchemy import DateTime, Float, Integer, String, Text
 from sqlalchemy import Enum as SAEnum
@@ -38,10 +39,10 @@ class Conversation(Base):
     turn_count: Mapped[int] = mapped_column(Integer, nullable=False)
     customer_sentiment: Mapped[CustomerSentiment] = mapped_column(SAEnum(CustomerSentiment), nullable=False)
     intent_detected: Mapped[str] = mapped_column(Text, nullable=False)
-    failure_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
-    suggested_intent_label: Mapped[str | None] = mapped_column(Text, nullable=True)
-    embedding: Mapped[list[float] | None] = mapped_column(embedding_type, nullable=True)
-    cluster_id: Mapped[int | None] = mapped_column(Integer, index=True, nullable=True)
+    failure_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    suggested_intent_label: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    embedding: Mapped[Optional[list[float]]] = mapped_column(embedding_type, nullable=True)
+    cluster_id: Mapped[Optional[int]] = mapped_column(Integer, index=True, nullable=True)
     session_duration_seconds: Mapped[int] = mapped_column(Integer, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
