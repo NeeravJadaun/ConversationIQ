@@ -27,22 +27,22 @@ Next.js dashboard
 git clone <repo-url>
 cd ConversationIQ
 cp .env.example .env
-docker-compose up --build
+docker compose up --build
 ```
 
 In a new terminal:
 
 ```bash
-python scripts/seed_database.py
-python scripts/run_clustering.py
-python scripts/generate_recommendations.py
+python3 scripts/seed_database.py
+python3 scripts/run_clustering.py
+python3 scripts/generate_recommendations.py
 open http://localhost:3000
 ```
 
 The scripts default to `http://localhost:8000`. To point them at another backend:
 
 ```bash
-API_URL=http://localhost:8000 python scripts/e2e_test.py
+API_URL=http://localhost:8000 python3 scripts/e2e_test.py
 ```
 
 ## Railway Deployment
@@ -82,15 +82,34 @@ Use the actual Railway service names in reference variables if yours differ from
 
 ## Run Tests
 
+For local checks outside Docker, install backend and frontend dependencies first:
+
+```bash
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install -r backend/requirements.txt
+cd frontend && npm ci && cd ..
+```
+
+```bash
+# Main local check
+scripts/check_project.sh
+
+# Full local check, including Docker Compose E2E smoke test
+scripts/check_project.sh --with-docker
+```
+
+Individual commands:
+
 ```bash
 # Backend
-docker-compose exec backend pytest tests/ -v
+cd backend && python3 -m pytest tests/ -v
 
 # Frontend
 cd frontend && npm test
 
 # End-to-end
-python scripts/e2e_test.py
+python3 scripts/e2e_test.py
 
 # Docker smoke test
 bash scripts/docker_smoke_test.sh
@@ -127,10 +146,10 @@ Thresholds:
 
 ## Demo Walkthrough
 
-1. Start the stack with `docker-compose up --build`.
+1. Start the stack with `docker compose up --build`.
 2. Open `http://localhost:3000` and leave the dashboard visible.
-3. Run `python scripts/seed_database.py` and watch the live feed update.
-4. Run `python scripts/run_clustering.py` to populate failure pattern analysis.
-5. Run `python scripts/generate_recommendations.py` to create fix recommendations.
+3. Run `python3 scripts/seed_database.py` and watch the live feed update.
+4. Run `python3 scripts/run_clustering.py` to populate failure pattern analysis.
+5. Run `python3 scripts/generate_recommendations.py` to create fix recommendations.
 6. Open a weak OP detail page, inspect trend, clusters, transcripts, and recommendations.
-7. Run `python scripts/e2e_test.py` to prove the full pipeline.
+7. Run `python3 scripts/e2e_test.py` to prove the full pipeline.

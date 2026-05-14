@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from collections import defaultdict
+import warnings
 
 import numpy as np
 from sklearn.cluster import HDBSCAN, KMeans
+from sklearn.exceptions import ConvergenceWarning
 from sqlalchemy.orm import Session
 
 from models import Conversation, FailureCluster, Recommendation
@@ -17,6 +19,38 @@ def _gap_description(items: list[Conversation]) -> str:
     labels = [item.suggested_intent_label or item.intent_detected for item in items[:5]]
     reason = items[0].failure_reason or "procedure gap"
     return f"The procedure is missing a clear path for {', '.join(labels[:3])}. Add explicit detection, customer-facing wording, and an escalation rule for this case because the current flow ends in {reason}."
+
+
+def _fit_kmeans(matrix: np.ndarray, n_clusters: int) -> np.ndarray:
+    if n_clusters <= 1:
+        return np.zeros(len(matrix), dtype=int)
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=ConvergenceWarning)
+        warnings.filterwarnings("ignore", category=RuntimeWarning, module=r"sklearn\.utils\.extmath")
+        return KMeans(n_clusters=n_clusters, random_state=7, n_init="auto").fit_predict(matrix)
+
+
+def _fit_hdbscan(matrix: np.ndarray) -> np.ndarray:
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=RuntimeWarning, module=r"sklearn\.utils\.extmath")
+        return HDBSCAN(min_cluster_size=5, min_samples=3).fit_predict(matrix)
+
+
+def _cluster_labels(matrix: np.ndarray, op_id: str | None) -> np.ndarray:
+    matrix = np.nan_to_num(matrix, nan=0.0, posinf=0.0, neginf=0.0)
+    unique_vectors = len(np.unique(matrix, axis=0))
+    if unique_vectors <= 1:
+        return np.zeros(len(matrix), dtype=int)
+
+    minimum_clusters = 2 if op_id else 5
+    if len(matrix) < 10 or unique_vectors < 5:
+        return _fit_kmeans(matrix, min(minimum_clusters, unique_vectors, len(matrix)))
+
+    labels = _fit_hdbscan(matrix)
+    usable_clusters = {int(label) for label in labels if label >= 0}
+    if len(usable_clusters) < minimum_clusters:
+        return _fit_kmeans(matrix, min(minimum_clusters, unique_vectors, len(matrix)))
+    return labels
 
 
 def run_clustering(op_id: str | None, db: Session) -> list[FailureCluster]:
@@ -48,14 +82,7 @@ def run_clustering(op_id: str | None, db: Session) -> list[FailureCluster]:
         )
         db.query(FailureCluster).filter(FailureCluster.id.in_(old_cluster_ids)).delete(synchronize_session=False)
     matrix = np.array([row.embedding for row in conversations], dtype=float)
-    if len(conversations) < 10:
-        labels = KMeans(n_clusters=min(2, len(conversations)), random_state=7, n_init="auto").fit_predict(matrix)
-    else:
-        labels = HDBSCAN(min_cluster_size=5, min_samples=3).fit_predict(matrix)
-        usable_clusters = {int(label) for label in labels if label >= 0}
-        minimum_clusters = 2 if op_id else 5
-        if len(usable_clusters) < minimum_clusters:
-            labels = KMeans(n_clusters=min(minimum_clusters, len(conversations)), random_state=7, n_init="auto").fit_predict(matrix)
+    labels = _cluster_labels(matrix, op_id)
 
     grouped: dict[tuple[str, int], list[Conversation]] = defaultdict(list)
     for conversation, label in zip(conversations, labels, strict=True):
